@@ -61,7 +61,8 @@ jobs:
           eslint_dir: packages/astro
           eslint_extensions: ts
           prettier: true
-          auto_fix: true
+          # main is a protected branch so auto_fix can only run on PRs
+          auto_fix: ${{ github.ref_name != 'main' }}
           git_name: github-actions[bot]
           git_email: github-actions[bot]@users.noreply.github.com
           commit_message: 'chore(lint): ${linter} fix'
