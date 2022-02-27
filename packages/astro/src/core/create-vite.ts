@@ -82,24 +82,6 @@ export async function createVite(inlineConfig: ViteConfigWithSSR, { astroConfig,
 		},
 	};
 
-	// Add in Astro renderers, which will extend the base config
-	for (const name of astroConfig.renderers) {
-		try {
-			const { default: renderer } = await import(resolveDependency(name, astroConfig));
-			if (!renderer) continue;
-			// if a renderer provides viteConfig(), call it and pass in results
-			if (renderer.viteConfig) {
-				if (typeof renderer.viteConfig !== 'function') {
-					throw new Error(`${name}: viteConfig(options) must be a function! Got ${typeof renderer.viteConfig}.`);
-				}
-				const rendererConfig = await renderer.viteConfig({ mode: inlineConfig.mode, command: inlineConfig.mode === 'production' ? 'build' : 'serve' }); // is this command true?
-				viteConfig = vite.mergeConfig(viteConfig, rendererConfig) as ViteConfigWithSSR;
-			}
-		} catch (err) {
-			throw new Error(`${name}: ${err}`);
-		}
-	}
-
 	viteConfig = vite.mergeConfig(viteConfig, inlineConfig); // merge in inline Vite config
 	return viteConfig;
 }

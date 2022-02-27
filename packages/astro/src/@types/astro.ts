@@ -100,7 +100,7 @@ export interface AstroUserConfig {
 	 *  '@astrojs/renderer-preact',
 	 * ],
 	 */
-	renderers?: string[];
+	// renderers?: string[];
 	/** Options for rendering markdown content */
 	markdownOptions?: {
 		render?: MarkdownRenderOptions;
@@ -169,7 +169,9 @@ export interface AstroUserConfig {
  * Resolved Astro Config
  * Config with user settings along with all defaults filled in.
  */
-export type AstroConfig = z.output<typeof AstroConfigSchema>;
+export interface AstroConfig extends z.output<typeof AstroConfigSchema> {
+	_renderers: RendererConfig[];
+}
 
 export type AsyncRendererComponentFn<U> = (Component: any, props: any, children: string | undefined, metadata?: AstroComponentMetadata) => Promise<U>;
 
@@ -315,38 +317,36 @@ export interface EndpointHandler {
 	[method: string]: (params: any) => EndpointOutput;
 }
 
-/**
- * Astro Renderer
- * Docs: https://docs.astro.build/reference/renderer-reference/
- */
-export interface Renderer {
-	/** Name of the renderer (required) */
+export interface RendererConfig {
+	/** Name of the renderer. */
 	name: string;
-	/** Import statement for renderer */
-	source?: string;
-	/** Import statement for the server renderer */
-	serverEntry: string;
-	/** Scripts to be injected before component */
-	polyfills?: string[];
-	/** Polyfills that need to run before hydration ever occurs */
-	hydrationPolyfills?: string[];
+	/** Import entrypoint for the client/browser renderer. */
+	clientEntrypoint?: string;
+	/** Import entrypoint for the server/build/ssr renderer. */
+	serverEntrypoint: string;
 	/** JSX identifier (e.g. 'react' or 'solid-js') */
 	jsxImportSource?: string;
 	/** Babel transform options */
 	jsxTransformOptions?: JSXTransformFn;
-	/** Utilies for server-side rendering */
+}
+export interface Renderer extends RendererConfig {
 	ssr: {
 		check: AsyncRendererComponentFn<boolean>;
 		renderToStaticMarkup: AsyncRendererComponentFn<{
 			html: string;
 		}>;
 	};
-	/** Return configuration object for Vite ("options" should match https://vitejs.dev/guide/api-plugin.html#config) */
-	viteConfig?: (options: { mode: 'string'; command: 'build' | 'serve' }) => Promise<vite.InlineConfig>;
-	/** @deprecated Don’t try and build these dependencies for client (deprecated in 0.21) */
-	external?: string[];
-	/** @deprecated Clientside requirements (deprecated in 0.21) */
-	knownEntrypoints?: string[];
+}
+
+/**
+ * Running an integration will create an instruction
+ * set of actions that the integration wants to take.
+ * The runtime (dev, build, ssr) can then choose how
+ * to perform those instructions and actions.
+ */
+export interface IntegrationInstructionSet {
+	addRenderer?: RendererConfig;
+	applyConfiguration?: any;
 }
 
 export type RouteType = 'page' | 'endpoint';

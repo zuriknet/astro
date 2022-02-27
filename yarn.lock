@@ -162,6 +162,15 @@
     vscode-languageserver-types "^3.16.0"
     vscode-uri "^3.0.2"
 
+"@astrojs/renderer-preact@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@astrojs/renderer-preact/-/renderer-preact-0.5.0.tgz#a4d0b2ee6bfadf5f155d41a206e9cea40c50a851"
+  integrity sha512-83De5FdGzCt7lqsHWx1Oc+pLgSM6G1xkdlZyV2pU0pyuV/NaTek9qaGNAmh96G28lufeyWKw1m1dVx8UGCSBnw==
+  dependencies:
+    "@babel/plugin-transform-react-jsx" "^7.16.7"
+    preact "^10.6.5"
+    preact-render-to-string "^5.1.19"
+
 "@astropub/webapi@^0.10.1", "@astropub/webapi@^0.10.13":
   version "0.10.14"
   resolved "https://registry.yarnpkg.com/@astropub/webapi/-/webapi-0.10.14.tgz#f3e118718d1353170ec9ea0adc4a725796717a77"

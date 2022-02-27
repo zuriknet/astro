@@ -1,11 +1,10 @@
 import type * as vite from 'vite';
-import type { AstroConfig, ComponentInstance, Renderer, RouteData, RuntimeMode } from '../../../@types/astro';
+import type { AstroConfig, ComponentInstance, Renderer, RendererConfig, RouteData, RuntimeMode } from '../../../@types/astro';
 import { LogOptions } from '../../logger.js';
 import { fileURLToPath } from 'url';
 import { getStylesForURL } from './css.js';
 import { injectTags } from './html.js';
 import { RouteCache } from '../route-cache.js';
-import { resolveRenderers } from './renderers.js';
 import { errorHandler } from './error.js';
 import { getHmrScript } from './hmr.js';
 import { render as coreRender } from '../core.js';
@@ -36,9 +35,22 @@ export type ComponentPreload = [Renderer[], ComponentInstance];
 
 const svelteStylesRE = /svelte\?svelte&type=style/;
 
+async function loadRenderer(viteServer: vite.ViteDevServer, renderer: RendererConfig): Promise<Renderer> {
+	const { url } = await viteServer.moduleGraph.ensureEntryFromUrl(renderer.serverEntrypoint);
+	const mod = (await viteServer.ssrLoadModule(url)) as { default: Renderer['ssr'] };
+	return { ...renderer, ssr: mod.default };
+}
+
+export async function loadRenderers(viteServer: vite.ViteDevServer, astroConfig: AstroConfig): Promise<Renderer[]> {
+	// TODO: run serially?
+	// TODO: cache
+	// const cache = new Map<string, Promise<Renderer>>();
+	return Promise.all(astroConfig._renderers.map((r) => loadRenderer(viteServer, r)));
+}
+
 export async function preload({ astroConfig, filePath, viteServer }: SSROptions): Promise<ComponentPreload> {
 	// Important: This needs to happen first, in case a renderer provides polyfills.
-	const renderers = await resolveRenderers(viteServer, astroConfig);
+	const renderers = await loadRenderers(viteServer, astroConfig);
 	// Load the module from the Vite SSR Runtime.
 	const mod = (await viteServer.ssrLoadModule(fileURLToPath(filePath))) as ComponentInstance;
 

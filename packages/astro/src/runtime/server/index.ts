@@ -219,7 +219,7 @@ Did you mean to enable ${formatList(probableRendererNames.map((r) => '`' + r + '
 			} else if (matchingRenderers.length === 1) {
 				// We already know that renderer.ssr.check() has failed
 				// but this will throw a much more descriptive error!
-				renderer = matchingRenderers[0];
+				renderer = matchingRenderers[0]!;
 				({ html } = await renderer.ssr.renderToStaticMarkup(Component, props, children));
 			} else {
 				throw new Error(`Unable to render ${metadata.displayName}!
@@ -254,14 +254,14 @@ If you're still stuck, please open an issue on GitHub or join us at https://astr
 	}
 
 	// This is used to add polyfill scripts to the page, if the renderer needs them.
-	if (renderer?.polyfills?.length) {
-		for (const src of renderer.polyfills) {
-			result.scripts.add({
-				props: { type: 'module' },
-				children: `import "${await result.resolve(src)}";`,
-			});
-		}
-	}
+	// if (renderer?.polyfills?.length) {
+	// 	for (const src of renderer.polyfills) {
+	// 		result.scripts.add({
+	// 			props: { type: 'module' },
+	// 			children: `import "${await result.resolve(src)}";`,
+	// 		});
+	// 	}
+	// }
 
 	if (!hydration) {
 		return unescapeHTML(html.replace(/\<\/?astro-fragment\>/g, ''));
@@ -272,7 +272,7 @@ If you're still stuck, please open an issue on GitHub or join us at https://astr
 
 	// Rather than appending this inline in the page, puts this into the `result.scripts` set that will be appended to the head.
 	// INVESTIGATE: This will likely be a problem in streaming because the `<head>` will be gone at this point.
-	result.scripts.add(await generateHydrateScript({ renderer, result, astroId, props }, metadata as Required<AstroComponentMetadata>));
+	result.scripts.add(await generateHydrateScript({ renderer: renderer!, result, astroId, props }, metadata as Required<AstroComponentMetadata>));
 
 	// Render a template if no fragment is provided.
 	const needsAstroTemplate = children && !/<\/?astro-fragment\>/.test(html);

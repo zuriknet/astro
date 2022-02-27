@@ -1,4 +1,4 @@
-import type { ComponentInstance, ManifestData, RouteData, Renderer } from '../../@types/astro';
+import type { ComponentInstance, ManifestData, RouteData, Renderer, RendererConfig } from '../../@types/astro';
 import type { SSRManifest as Manifest, RouteInfo } from './types';
 
 import { defaultLogOptions } from '../logger.js';
@@ -6,8 +6,8 @@ import { matchRoute } from '../routing/match.js';
 import { render } from '../render/core.js';
 import { RouteCache } from '../render/route-cache.js';
 import { createLinkStylesheetElementSet, createModuleScriptElementWithSrcSet } from '../render/ssr-element.js';
-import { createRenderer } from '../render/renderer.js';
 import { prependForwardSlash } from '../path.js';
+import { loadIntegrations, runIntegrations } from '../../integrations/index.js';
 
 export class App {
 	#manifest: Manifest;
@@ -69,19 +69,18 @@ export class App {
 	}
 	async #loadRenderers(): Promise<Renderer[]> {
 		const rendererNames = this.#manifest.renderers;
-		return await Promise.all(
-			rendererNames.map(async (rendererName) => {
-				return createRenderer(rendererName, {
-					renderer(name) {
-						return import(name);
-					},
-					server(entry) {
-						return import(entry);
-					},
-				});
+		const loadedIntegrations = await loadIntegrations(rendererNames);
+		const integrationInstructions = await runIntegrations(loadedIntegrations);
+		const rendererConfigObjects = integrationInstructions.map((ins) => ins.addRenderer).filter(Boolean) as RendererConfig[];
+		const renderers = await Promise.all(
+			rendererConfigObjects.map(async (r) => {
+				const mod = (await import(r.serverEntrypoint)) as { default: Renderer['ssr'] };
+				return { ...r, ssr: mod.default };
 			})
 		);
+		return renderers;
 	}
+
 	async #loadModule(rootRelativePath: string): Promise<ComponentInstance> {
 		let modUrl = new URL(rootRelativePath, this.#rootFolder).toString();
 		let mod: ComponentInstance;

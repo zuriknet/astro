@@ -1,4 +1,4 @@
-import type { AstroComponentMetadata } from '../../@types/astro';
+import type { AstroComponentMetadata, Renderer } from '../../@types/astro';
 import type { SSRElement, SSRResult } from '../../@types/astro';
 import { hydrationSpecifier, serializeListValue } from './util.js';
 import serializeJavaScript from 'serialize-javascript';
@@ -81,7 +81,7 @@ export function extractDirectives(inputProps: Record<string | number, any>): Ext
 }
 
 interface HydrateScriptOptions {
-	renderer: any;
+	renderer: Renderer;
 	result: SSRResult;
 	astroId: string;
 	props: Record<string | number, any>;
@@ -97,15 +97,15 @@ export async function generateHydrateScript(scriptOptions: HydrateScriptOptions,
 	}
 
 	let hydrationSource = '';
-	if (renderer.hydrationPolyfills) {
-		hydrationSource += `await Promise.all([${(await Promise.all(renderer.hydrationPolyfills.map(async (src: string) => `\n  import("${await result.resolve(src)}")`))).join(
-			', '
-		)}]);\n`;
-	}
+	// if (renderer.hydrationPolyfills) {
+	// 	hydrationSource += `await Promise.all([${(await Promise.all(renderer.hydrationPolyfills.map(async (src: string) => `\n  import("${await result.resolve(src)}")`))).join(
+	// 		', '
+	// 	)}]);\n`;
+	// }
 
-	hydrationSource += renderer.source
+	hydrationSource += renderer.clientEntrypoint
 		? `const [{ ${componentExport.value}: Component }, { default: hydrate }] = await Promise.all([import("${await result.resolve(componentUrl)}"), import("${await result.resolve(
-				renderer.source
+				renderer.clientEntrypoint
 		  )}")]);
   return (el, children) => hydrate(el)(Component, ${serializeProps(props)}, children);
 `

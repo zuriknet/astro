@@ -1,6 +1,6 @@
 import type { OutputChunk, OutputAsset, RollupOutput } from 'rollup';
 import type { Plugin as VitePlugin, UserConfig, Manifest as ViteManifest } from 'vite';
-import type { AstroConfig, ComponentInstance, ManifestData, Renderer, RouteType } from '../../@types/astro';
+import type { AstroConfig, ComponentInstance, ManifestData, Renderer, RendererConfig, RouteType } from '../../@types/astro';
 import type { AllPagesData } from './types';
 import type { LogOptions } from '../logger';
 import type { ViteConfigWithSSR } from '../create-vite';
@@ -109,12 +109,13 @@ export async function staticBuild(opts: StaticBuildOptions) {
 	const facadeIdToPageDataMap = new Map<string, PageBuildData>();
 
 	// Collects polyfills and passes them as top-level inputs
-	const polyfills = getRenderers(opts).flatMap((renderer) => {
-		return (renderer.polyfills || []).concat(renderer.hydrationPolyfills || []);
-	});
-	for (const polyfill of polyfills) {
-		jsInput.add(polyfill);
-	}
+	// TODO: Move into integrations?
+	// const polyfills = getRenderers(opts).flatMap((renderer) => {
+	// 	return (renderer.polyfills || []).concat(renderer.hydrationPolyfills || []);
+	// });
+	// for (const polyfill of polyfills) {
+	// 	jsInput.add(polyfill);
+	// }
 
 	// Build internals needed by the CSS plugin
 	const internals = createBuildInternals();
@@ -133,7 +134,7 @@ export async function staticBuild(opts: StaticBuildOptions) {
 				// Any hydration directive like astro/client/idle.js
 				...metadata.hydrationDirectiveSpecifiers(),
 				// The client path for each renderer
-				...renderers.filter((renderer) => !!renderer.source).map((renderer) => renderer.source!),
+				...renderers.filter((renderer) => !!renderer.clientEntrypoint).map((renderer) => renderer.clientEntrypoint!),
 			]);
 
 			// Add hoisted scripts
@@ -268,28 +269,23 @@ function getRenderers(opts: StaticBuildOptions) {
 	return viteLoadedRenderers;
 }
 
-async function collectRenderers(opts: StaticBuildOptions): Promise<Renderer[]> {
-	const viteLoadedRenderers = getRenderers(opts);
+async function loadRenderer(renderer: RendererConfig): Promise<Renderer> {
+	const mod = (await import(renderer.serverEntrypoint)) as { default: Renderer['ssr'] };
+	return { ...renderer, ssr: mod.default };
+}
 
-	const renderers = await Promise.all(
-		viteLoadedRenderers.map(async (r) => {
-			const mod = await import(r.serverEntry);
-			return Object.create(r, {
-				ssr: {
-					value: mod.default,
-				},
-			}) as Renderer;
-		})
-	);
-
-	return renderers;
+async function loadRenderers(astroConfig: AstroConfig): Promise<Renderer[]> {
+	// TODO: run serially?
+	// TODO: cache
+	// const cache = new Map<string, Promise<Renderer>>();
+	return Promise.all(astroConfig._renderers.map((r) => loadRenderer(r)));
 }
 
 async function generatePages(result: RollupOutput, opts: StaticBuildOptions, internals: BuildInternals, facadeIdToPageDataMap: Map<string, PageBuildData>) {
 	debug('build', 'Finish build. Begin generating.');
 
 	// Get renderers to be shared for each page generation.
-	const renderers = await collectRenderers(opts);
+	const renderers = await loadRenderers(opts.astroConfig);
 
 	const generationPromises = [];
 	for (let output of result.output) {
@@ -444,7 +440,7 @@ async function generateManifest(result: RollupOutput, opts: StaticBuildOptions, 
 		markdown: {
 			render: astroConfig.markdownOptions.render,
 		},
-		renderers: astroConfig.renderers,
+		renderers: astroConfig._renderers.map((r) => r.name),
 		entryModules: Object.fromEntries(internals.entrySpecifierToBundleMap.entries()),
 	};
 

@@ -1,12 +1,14 @@
-import type { AstroConfig, AstroUserConfig, CLIFlags } from '../@types/astro';
+import type { AstroConfig, AstroUserConfig, CLIFlags, IntegrationInstructionSet } from '../@types/astro';
 import type { Arguments as Flags } from 'yargs-parser';
 
 import * as colors from 'kleur/colors';
+import * as vite from 'vite';
 import path from 'path';
 import { pathToFileURL, fileURLToPath } from 'url';
 import { z } from 'zod';
 import load from '@proload/core';
 import loadTypeScript from '@proload/plugin-tsm';
+import { loadIntegrations, runIntegrations } from '../integrations/index.js';
 
 load.use([loadTypeScript]);
 
@@ -41,7 +43,7 @@ export const AstroConfigSchema = z.object({
 		.optional()
 		.default('./dist')
 		.transform((val) => new URL(val)),
-	renderers: z.array(z.string()).optional().default(['@astrojs/renderer-svelte', '@astrojs/renderer-vue', '@astrojs/renderer-react', '@astrojs/renderer-preact']),
+	integrations: z.array(z.any()).optional().default([]),
 	markdownOptions: z
 		.object({
 			footnotes: z.boolean().optional(),
@@ -113,7 +115,12 @@ export async function validateConfig(userConfig: any, root: string): Promise<Ast
 			.default('./dist')
 			.transform((val) => new URL(addTrailingSlash(val), fileProtocolRoot)),
 	});
-	return AstroConfigRelativeSchema.parseAsync(userConfig);
+	return {
+		...(await AstroConfigRelativeSchema.parseAsync(userConfig)),
+		// TODO: This is a property on the config object that is never seen by the user.
+		// We may want a wrapping AstroConfig class in the future to manage things like these.
+		_renderers: [],
+	};
 }
 
 /** Adds '/' to end of string but doesn’t double-up */
@@ -155,6 +162,15 @@ function mergeCLIFlags(astroConfig: AstroUserConfig, flags: CLIFlags) {
 	return astroConfig;
 }
 
+function applyIntegration(config: AstroConfig, instruction: IntegrationInstructionSet) {
+	if (instruction.addRenderer) {
+		config._renderers.push(instruction.addRenderer);
+	}
+	if (instruction.applyConfiguration) {
+		config.vite = vite.mergeConfig(config.vite, instruction.applyConfiguration);
+	}
+}
+
 interface LoadConfigOptions {
 	cwd?: string;
 	flags?: Flags;
@@ -180,6 +196,12 @@ export async function loadConfig(configOptions: LoadConfigOptions): Promise<Astr
 	// normalize, validate, and return
 	const mergedConfig = mergeCLIFlags(userConfig, flags);
 	const validatedConfig = await validateConfig(mergedConfig, root);
+
+	// load and apply integrations
+	const loadedIntegrations = await loadIntegrations(validatedConfig.integrations);
+	const integrationInstructions = await runIntegrations(loadedIntegrations, validatedConfig);
+	integrationInstructions.forEach((ins) => applyIntegration(validatedConfig, ins));
+
 	return validatedConfig;
 }
 
