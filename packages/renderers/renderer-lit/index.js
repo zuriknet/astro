@@ -1,35 +1,54 @@
-// NOTE: @lit-labs/ssr uses syntax incompatible with anything < Node v13.9.0.
-// Throw an error if using that Node version.
-
-const NODE_VERSION = parseFloat(process.versions.node);
-if (NODE_VERSION < 13.9) {
-	throw new Error(`Package @lit-labs/ssr requires Node version v13.9 or higher. Please update Node to use @astrojs/renderer-lit`);
+function getRenderer() {
+	return {
+		name: '@astrojs/lit',
+		serverEntrypoint: '@astrojs/lit/server.js',
+	};
 }
 
-export default {
-	name: '@astrojs/renderer-lit',
-	server: './server.js',
-	polyfills: ['./client-shim.js'],
-	hydrationPolyfills: ['./hydration-support.js'],
-	viteConfig() {
-		return {
-			optimizeDeps: {
-				include: [
-					'@astrojs/renderer-lit/client-shim.js',
-					'@astrojs/renderer-lit/hydration-support.js',
-					'@webcomponents/template-shadowroot/template-shadowroot.js',
-					'lit/experimental-hydrate-support.js',
-				],
-				exclude: ['@astrojs/renderer-lit/server.js'],
-			},
-			ssr: {
-				external: [
-					'lit-element/lit-element.js',
-					'@lit-labs/ssr/lib/install-global-dom-shim.js',
-					'@lit-labs/ssr/lib/render-lit-html.js',
-					'@lit-labs/ssr/lib/lit-element-renderer.js',
-				],
-			},
-		};
-	},
-};
+function getConfiguration() {
+	return {
+					optimizeDeps: {
+						include: [
+							'@astrojs/lit/client-shim.js',
+							'@astrojs/lit/hydration-support.js',
+							'@webcomponents/template-shadowroot/template-shadowroot.js',
+							'lit/experimental-hydrate-support.js',
+						],
+						exclude: ['@astrojs/lit/server.js'],
+					},
+					ssr: {
+						external: [
+							'lit-element/lit-element.js',
+							'@lit-labs/ssr/lib/install-global-dom-shim.js',
+							'@lit-labs/ssr/lib/render-lit-html.js',
+							'@lit-labs/ssr/lib/lit-element-renderer.js',
+						],
+					},
+				};
+}
+
+/** @type { config: Readonly<AstroConfig>; assertDependency: (pkg: string, semver: string) => void; addRenderer: (mod: any | Promise<any>) => void } */
+export default async function (astro) {
+	// EXAMPLE: Preact Integration
+	// In a future system, you would add preact by simply running `astro add preact`
+	// or `astro setup preact` and then astro would take care of the rest.
+
+	// addRenderer: Add a renderer to the project. This would most likely be stored
+	// in the same package as the integration itself, so more likely: import('./renderer/index.js');
+	console.log('START');
+	astro.addRenderer(getRenderer());
+	astro.applyConfiguration(getConfiguration());
+	// TODO: Add polyfills:
+	astro.addScriptImport('beforeHydration', '@astrojs/lit/client-shim.js');
+	astro.addScriptImport('beforeHydration', '@astrojs/lit/hydration-support.js');
+
+
+	// assertDependency: Assert that this is a dependency of the project.
+	// astro.assertDependency('preact', '~10.5.0');
+
+	// Example: React
+	// astro.addRenderer(await import(`@astrojs` + `/renderer-react`));
+	// astro.assertDependency('react', '^17.0.0');
+	// astro.assertDependency('react-dom', '^17.0.0');
+	// return astro.config.buildOptions.site;
+}

@@ -134,12 +134,18 @@ export default function astro({ config, logging }: AstroPluginOptions): vite.Plu
 
 				// Compile all TypeScript to JavaScript.
 				// Also, catches invalid JS/TS in the compiled output before returning.
-				const { code, map } = await esbuild.transform(transformResult.code, {
+				let { code, map } = await esbuild.transform(transformResult.code, {
 					loader: 'ts',
 					sourcemap: 'external',
 					sourcefile: id,
 				});
 
+				// HACK: Playing around with some global styles
+				if (id.includes('/src/pages/')) {
+					code += `\nimport '$scripts/styles.js';`
+				}
+				
+				console.log(id);
 				return {
 					code,
 					map,

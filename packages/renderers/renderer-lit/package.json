@@ -1,5 +1,5 @@
 {
-  "name": "@astrojs/renderer-lit",
+  "name": "@astrojs/lit",
   "version": "0.4.0",
   "description": "Use Lit components within Astro",
   "type": "module",
@@ -14,13 +14,15 @@
   "homepage": "https://astro.build",
   "exports": {
     ".": "./index.js",
-    "./*": "./*",
     "./server.js": "./server.js",
     "./client-shim.js": "./client-shim.js",
+    "./hydration-support.js": "./hydration-support.js",
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@lit-labs/ssr": "^2.0.2",
+    "@lit-labs/ssr": "^2.0.2"
+  },
+  "peerDependencies": {
     "@webcomponents/template-shadowroot": "^0.1.0",
     "lit": "^2.1.3"
   }

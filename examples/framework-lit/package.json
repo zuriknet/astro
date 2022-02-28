@@ -9,7 +9,12 @@
     "preview": "astro preview"
   },
   "devDependencies": {
-    "@astrojs/renderer-lit": "^0.4.0",
+    "@astrojs/lit": "^0.4.0",
+    "@astrojs/partytown": "^0.1.0",
+    "@astrojs/tailwind": "^0.1.0",
     "astro": "^0.23.2"
+  },
+  "dependencies": {
+    "@webcomponents/template-shadowroot": "^0.1.0"
   }
 }

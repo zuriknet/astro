@@ -17,7 +17,11 @@ export async function loadIntegrations(integrations: string[]): Promise<Integrat
 export async function runIntegrations(integrations: IntegrationObject[], config?: AstroConfig): Promise<IntegrationInstructionSet[]> {
 	const instructionSets: IntegrationInstructionSet[] = [];
 	for (const integration of integrations) {
-		const instruction: IntegrationInstructionSet = {};
+		const instruction: IntegrationInstructionSet = {
+			scripts: [],
+			styles: [],
+			files: [],
+		};
 		instructionSets.push(instruction);
 		console.log(
 			await integration[2].default({
@@ -28,6 +32,22 @@ export async function runIntegrations(integrations: IntegrationObject[], config?
 				applyConfiguration: (newConfigValues: any) => {
 					instruction.applyConfiguration = newConfigValues;
 				},
+				addScriptImport: (stage: 'beforeHydration', specifier: string) => {
+					instruction.scripts.push({stage, content: `import '${specifier}';`});
+				},
+				addScriptInline: (stage: 'beforeHydration' | 'head', content: string) => {
+					instruction.scripts.push({stage, content});
+				},
+				addStyle: (specifier: string) => {
+					instruction.styles.push({specifier});
+				},
+				includeDirectory: (from: string, to: string = '') => {
+					instruction.files.push({from, to});
+				},
+				
+				// copyFile: (from: string, to: string = '') => {
+				// 	instruction.files.push({from, to});
+				// },
 			})
 		);
 	}

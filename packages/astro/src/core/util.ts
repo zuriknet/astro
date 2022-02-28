@@ -1,6 +1,7 @@
 import type { AstroConfig } from '../@types/astro';
 import type { ErrorPayload } from 'vite';
 import eol from 'eol';
+import fs from 'fs';
 import path from 'path';
 import slash from 'slash';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -96,6 +97,23 @@ export function resolveDependency(dep: string, astroConfig: AstroConfig) {
 export function viteID(filePath: URL): string {
 	return slash(fileURLToPath(filePath));
 }
+export function copyDir(srcDir: string, destDir: string): void {
+  fs.mkdirSync(destDir, { recursive: true })
+  for (const file of fs.readdirSync(srcDir)) {
+    const srcFile = path.resolve(srcDir, file)
+    if (srcFile === destDir) {
+      continue
+    }
+    const destFile = path.resolve(destDir, file)
+    const stat = fs.statSync(srcFile)
+    if (stat.isDirectory()) {
+      copyDir(srcFile, destFile)
+    } else {
+      fs.copyFileSync(srcFile, destFile)
+    }
+  }
+}
+
 
 // Vendored from https://github.com/genmon/aboutfeeds/blob/main/tools/pretty-feed-v3.xsl
 /** Basic stylesheet for RSS feeds */

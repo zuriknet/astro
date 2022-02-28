@@ -171,6 +171,11 @@ export interface AstroUserConfig {
  */
 export interface AstroConfig extends z.output<typeof AstroConfigSchema> {
 	_renderers: RendererConfig[];
+	_ctx: {
+		scripts: {stage: 'beforeHydration' | 'head', content: string}[],
+		styles: {specifier: string}[],
+		files: {from: string, to: string}[],
+	};
 }
 
 export type AsyncRendererComponentFn<U> = (Component: any, props: any, children: string | undefined, metadata?: AstroComponentMetadata) => Promise<U>;
@@ -347,6 +352,9 @@ export interface Renderer extends RendererConfig {
 export interface IntegrationInstructionSet {
 	addRenderer?: RendererConfig;
 	applyConfiguration?: any;
+	scripts: {stage: 'beforeHydration' | 'head', content: string}[];
+	styles: {specifier: string}[];
+	files: {from: string, to: string}[];
 }
 
 export type RouteType = 'page' | 'endpoint';

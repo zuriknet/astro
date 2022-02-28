@@ -1,6 +1,7 @@
 import type * as vite from 'vite';
 import type http from 'http';
 import type { AstroConfig, ManifestData, RouteData } from '../@types/astro';
+import sirv from './sirv.js';
 import { info, LogOptions } from '../core/logger.js';
 import { createRouteManifest, matchRoute } from '../core/routing/index.js';
 import stripAnsi from 'strip-ansi';
@@ -25,6 +26,23 @@ function removeViteHttpMiddleware(server: vite.Connect.Server) {
 			server.stack.splice(i, 1);
 		}
 	}
+}
+
+
+const sirvOptions = {
+  dev: true,
+  etag: true,
+  extensions: [],
+  setHeaders(res: any, pathname: string) {
+    // Matches js, jsx, ts, tsx.
+    // The reason this is done, is that the .ts file extension is reserved
+    // for the MIME type video/mp2t. In almost all cases, we can expect
+    // these files to be TypeScript files, and for Vite to serve them with
+    // this Content-Type.
+    if (/\.[tj]sx?$/.test(pathname)) {
+      res.setHeader('Content-Type', 'application/javascript')
+    }
+  }
 }
 
 function writeHtmlResponse(res: http.ServerResponse, statusCode: number, html: string) {
@@ -138,6 +156,9 @@ export default function createPlugin({ config, logging }: AstroPluginOptions): v
 			viteServer.watcher.on('change', rebuildManifest.bind(null, false));
 			return () => {
 				removeViteHttpMiddleware(viteServer.middlewares);
+				for (const {from, to} of config._ctx.files) {
+					viteServer.middlewares.use(sirv(from, {...sirvOptions, mount: to}));
+				}
 				viteServer.middlewares.use(async (req, res) => {
 					if (!req.url || !req.method) {
 						throw new Error('Incomplete request');

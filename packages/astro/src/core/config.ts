@@ -120,6 +120,7 @@ export async function validateConfig(userConfig: any, root: string): Promise<Ast
 		// TODO: This is a property on the config object that is never seen by the user.
 		// We may want a wrapping AstroConfig class in the future to manage things like these.
 		_renderers: [],
+		_ctx: {scripts: [], styles: [], files: []},
 	};
 }
 
@@ -169,6 +170,16 @@ function applyIntegration(config: AstroConfig, instruction: IntegrationInstructi
 	if (instruction.applyConfiguration) {
 		config.vite = vite.mergeConfig(config.vite, instruction.applyConfiguration);
 	}
+	for (const script of instruction.scripts) {
+		config._ctx.scripts.push(script);
+	}
+	for (const file of instruction.files) {
+		config._ctx.files.push(file);
+	}
+	for (const style of instruction.styles) {
+		config._ctx.styles.push(style);
+	}
+	console.log(config._ctx);
 }
 
 interface LoadConfigOptions {

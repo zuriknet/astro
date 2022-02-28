@@ -1,0 +1,23 @@
+{
+  "name": "@astrojs/tailwind",
+  "description": "Use Partytown within Astro",
+  "version": "0.1.0",
+  "type": "module",
+  "author": "withastro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/withastro/astro.git",
+    "directory": "packages/renderers/renderer-preact"
+  },
+  "bugs": "https://github.com/withastro/astro/issues",
+  "homepage": "https://astro.build",
+  "exports": {
+    ".": "./index.js",
+    "./base.css": "./base.css",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@builder.io/partytown": "^0.4.0"
+  }
+}

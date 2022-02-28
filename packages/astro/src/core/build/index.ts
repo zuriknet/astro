@@ -2,6 +2,7 @@ import type { AstroConfig, ManifestData } from '../../@types/astro';
 import type { LogOptions } from '../logger';
 
 import fs from 'fs';
+import {fileURLToPath} from 'url';
 import * as colors from 'kleur/colors';
 import { polyfill } from '@astropub/webapi';
 import { performance } from 'perf_hooks';
@@ -14,6 +15,7 @@ import { collectPagesData } from './page-data.js';
 import { build as scanBasedBuild } from './scan-based-build.js';
 import { staticBuild } from './static-build.js';
 import { RouteCache } from '../render/route-cache.js';
+import { copyDir } from '../util.js';
 
 export interface BuildOptions {
 	mode?: string;
@@ -144,6 +146,11 @@ class AstroBuilder {
 			fs.writeFileSync(filePath, assets[k], 'utf8');
 			delete assets[k]; // free up memory
 		});
+		for (const {from, to} of this.config._ctx.files) {
+			const copyToUrl = new URL(to.replace(/^\//, ''), this.config.dist);
+			// await fs.promises.mkdir(copyToUrl, { recursive: true });
+			await copyDir(from, fileURLToPath(copyToUrl));
+		}
 		debug('build', timerMessage('Additional assets copied', timer.assetsStart));
 
 		// Build your final sitemap.

@@ -581,8 +581,8 @@ export function vitePluginNewBuild(input: Set<string>, internals: BuildInternals
 			}
 			await Promise.all(promises);
 			for (const [, chunk] of Object.entries(bundle)) {
-				if (chunk.type === 'chunk' && chunk.facadeModuleId && mapping.has(chunk.facadeModuleId)) {
-					const specifier = mapping.get(chunk.facadeModuleId)!;
+				if (chunk.type === 'chunk' && chunk.facadeModuleId) {
+					const specifier = mapping.get(chunk.facadeModuleId) || chunk.facadeModuleId;
 					internals.entrySpecifierToBundleMap.set(specifier, chunk.fileName);
 				}
 			}

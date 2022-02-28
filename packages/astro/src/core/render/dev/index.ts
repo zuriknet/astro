@@ -77,6 +77,14 @@ export async function render(renderers: Renderer[], mod: ComponentInstance, ssrO
 			children: '',
 		});
 	}
+	for (const script of astroConfig._ctx.scripts) {
+		if (script.stage === 'head') {
+			scripts.add({
+				props: { },
+				children: script.content,
+			});
+		}
+	}
 
 	let content = await coreRender({
 		experimentalStaticBuild: astroConfig.buildOptions.experimentalStaticBuild,

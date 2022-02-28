@@ -1,0 +1,1 @@
+import '@astrojs/tailwind/base.css';

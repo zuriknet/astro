@@ -96,12 +96,7 @@ export async function generateHydrateScript(scriptOptions: HydrateScriptOptions,
 		throw new Error(`Unable to resolve a componentExport for "${metadata.displayName}"! Please open an issue.`);
 	}
 
-	let hydrationSource = '';
-	// if (renderer.hydrationPolyfills) {
-	// 	hydrationSource += `await Promise.all([${(await Promise.all(renderer.hydrationPolyfills.map(async (src: string) => `\n  import("${await result.resolve(src)}")`))).join(
-	// 		', '
-	// 	)}]);\n`;
-	// }
+	let hydrationSource = ``;
 
 	hydrationSource += renderer.clientEntrypoint
 		? `const [{ ${componentExport.value}: Component }, { default: hydrate }] = await Promise.all([import("${await result.resolve(componentUrl)}"), import("${await result.resolve(
@@ -116,6 +111,7 @@ export async function generateHydrateScript(scriptOptions: HydrateScriptOptions,
 	const hydrationScript = {
 		props: { type: 'module', 'data-astro-component-hydration': true },
 		children: `import setup from '${await result.resolve(hydrationSpecifier(hydrate))}';
+import '${await result.resolve('$scripts/beforeHydration.js')}';
 setup("${astroId}", {name:"${metadata.displayName}",${metadata.hydrateArgs ? `value: ${JSON.stringify(metadata.hydrateArgs)}` : ''}}, async () => {
   ${hydrationSource}
 });
