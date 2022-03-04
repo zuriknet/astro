@@ -1,7 +1,7 @@
 ---
 import Lorem from '../components/Lorem.astro';
 import '../components/Test.js';
-import '../components/Counter.js';
+import '../components/Counter.js'; 
 ---
 
 <!DOCTYPE html>
@@ -11,9 +11,23 @@ import '../components/Counter.js';
 		<title>Demo</title>
 	</head>
 	<body>
-		<h1>Test app</h1>
+		<h1 class="px-8 py-8">Test app</h1>
 		<my-counter client:load></my-counter>
 		<Lorem />
 		<calc-add num={33}></calc-add>
+
+    <script type="text/partytown">
+      console.log('start to block')
+      console.log(`Nah. you won't be blocked`)
+      const now = Date.now()
+      let count = 1;
+      while (Date.now() - now < 10000) {
+        if (Date.now() - now > count * 1000) {
+          console.log('blocking');
+          count += 1;
+        }
+      }
+      console.log('end block')
+    </script>
 	</body>
 </html>

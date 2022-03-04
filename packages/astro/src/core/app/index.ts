@@ -1,4 +1,4 @@
-import type { ComponentInstance, ManifestData, RouteData, Renderer } from '../../@types/astro';
+import type { ComponentInstance, ManifestData, RouteData, SSRLoadedRenderer } from '../../@types/astro';
 import type { SSRManifest as Manifest, RouteInfo } from './types';
 
 import { defaultLogOptions } from '../logger.js';
@@ -6,7 +6,6 @@ import { matchRoute } from '../routing/match.js';
 import { render } from '../render/core.js';
 import { RouteCache } from '../render/route-cache.js';
 import { createLinkStylesheetElementSet, createModuleScriptElementWithSrcSet } from '../render/ssr-element.js';
-import { createRenderer } from '../render/renderer.js';
 import { prependForwardSlash } from '../path.js';
 
 export class App {
@@ -15,7 +14,7 @@ export class App {
 	#rootFolder: URL;
 	#routeDataToRouteInfo: Map<RouteData, RouteInfo>;
 	#routeCache: RouteCache;
-	#renderersPromise: Promise<Renderer[]>;
+	#renderersPromise: Promise<SSRLoadedRenderer[]>;
 
 	constructor(manifest: Manifest, rootFolder: URL) {
 		this.#manifest = manifest;
@@ -67,18 +66,20 @@ export class App {
 			site: this.#manifest.site,
 		});
 	}
-	async #loadRenderers(): Promise<Renderer[]> {
+	async #loadRenderers(): Promise<SSRLoadedRenderer[]> {
 		const rendererNames = this.#manifest.renderers;
 		return await Promise.all(
 			rendererNames.map(async (rendererName) => {
-				return createRenderer(rendererName, {
-					renderer(name) {
-						return import(name);
-					},
-					server(entry) {
-						return import(entry);
-					},
-				});
+				// TODO: Fix the new renderer concept for SSR.
+				return null as any;
+				// return createRenderer(rendererName, {
+				// renderer(name) {
+				// 	return import(name);
+				// },
+				// server(entry) {
+				// 	return import(entry);
+				// },
+				// });
 			})
 		);
 	}

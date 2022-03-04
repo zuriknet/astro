@@ -132,11 +132,18 @@ export default function astro({ config, logging }: AstroPluginOptions): vite.Plu
 			}
 
 			try {
+				// HACK: Playing around with some page-level scripts & styles
+				// TODO: Is there a way to do this using the compiler instead?
+				// TODO: Why does all of this logic happen in transform instead of load()?
+				if (id.includes('/src/pages/')) {
+					source += `\n<script hoist src="$scripts/bundle.js" />\n`;
+				}
+
 				const transformResult = await cachedCompilation(config, id, source, viteTransform, { ssr: Boolean(opts?.ssr) });
 
 				// Compile all TypeScript to JavaScript.
 				// Also, catches invalid JS/TS in the compiled output before returning.
-				const { code, map } = await esbuild.transform(transformResult.code, {
+				let { code, map } = await esbuild.transform(transformResult.code, {
 					loader: 'ts',
 					sourcemap: 'external',
 					sourcefile: id,

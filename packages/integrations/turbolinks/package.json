@@ -1,0 +1,22 @@
+{
+  "name": "@astrojs/turbolinks",
+  "description": "Turbolinks + Astro Integrations",
+  "version": "0.1.0",
+  "type": "module",
+  "author": "withastro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/withastro/astro.git",
+    "directory": "packages/integrations/turbolinks"
+  },
+  "bugs": "https://github.com/withastro/astro/issues",
+  "homepage": "https://astro.build",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "turbolinks": "*"
+  }
+}

@@ -1,4 +1,4 @@
-import type { AstroGlobal, AstroGlobalPartial, MarkdownParser, MarkdownRenderOptions, Params, Renderer, SSRElement, SSRResult } from '../../@types/astro';
+import type { AstroGlobal, AstroGlobalPartial, MarkdownParser, MarkdownRenderOptions, Params, SSRLoadedRenderer, SSRElement, SSRResult } from '../../@types/astro';
 
 import { bold } from 'kleur/colors';
 import { canonicalURL as getCanonicalURL } from '../util.js';
@@ -14,7 +14,7 @@ export interface CreateResultArgs {
 	markdownRender: MarkdownRenderOptions;
 	params: Params;
 	pathname: string;
-	renderers: Renderer[];
+	renderers: SSRLoadedRenderer[];
 	resolve: (s: string) => Promise<string>;
 	site: string | undefined;
 	links?: Set<SSRElement>;

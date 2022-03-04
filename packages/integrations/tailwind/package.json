@@ -1,0 +1,24 @@
+{
+  "name": "@astrojs/tailwind",
+  "description": "Tailwind + Astro Integrations",
+  "version": "0.1.0",
+  "type": "module",
+  "author": "withastro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/withastro/astro.git",
+    "directory": "packages/integrations/tailwind"
+  },
+  "bugs": "https://github.com/withastro/astro/issues",
+  "homepage": "https://astro.build",
+  "exports": {
+    ".": "./index.js",
+    "./base.css": "./base.css",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.0.23",
+    "@builder.io/partytown": "^0.4.0"
+  }
+}

@@ -1,5 +1,6 @@
 import type { AstroConfig, AstroUserConfig, CLIFlags } from '../@types/astro';
 import type { Arguments as Flags } from 'yargs-parser';
+import type * as Postcss from 'postcss';
 
 import * as colors from 'kleur/colors';
 import path from 'path';
@@ -7,8 +8,43 @@ import { pathToFileURL, fileURLToPath } from 'url';
 import { z } from 'zod';
 import load from '@proload/core';
 import loadTypeScript from '@proload/plugin-tsm';
+import { loadIntegrations } from '../integrations/index.js';
+import postcssrc from 'postcss-load-config'
 
 load.use([loadTypeScript]);
+
+export function isObject(value: unknown): value is Record<string, any> {
+	return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+interface PostCSSConfigResult {
+	options: Postcss.ProcessOptions;
+	plugins: Postcss.Plugin[];
+}
+
+async function resolvePostcssConfig(inlineOptions: any, root: URL): Promise<PostCSSConfigResult> {
+	if (isObject(inlineOptions)) {
+		const options = { ...inlineOptions };
+		delete options.plugins;
+		return {
+			options,
+			plugins: inlineOptions.plugins || [],
+		};
+	}
+	const searchPath = typeof inlineOptions === 'string' ? inlineOptions : fileURLToPath(root);
+	try {
+		// @ts-ignore
+		return await postcssrc({}, searchPath);
+	} catch (err: any) {
+		if (!/No PostCSS Config found/.test(err.message)) {
+			throw err;
+		}
+		return {
+			options: {},
+			plugins: [],
+		};
+	}
+}
 
 export const AstroConfigSchema = z.object({
 	projectRoot: z
@@ -36,7 +72,27 @@ export const AstroConfigSchema = z.object({
 		.optional()
 		.default('./dist')
 		.transform((val) => new URL(val)),
-	renderers: z.array(z.string()).optional().default(['@astrojs/renderer-svelte', '@astrojs/renderer-vue', '@astrojs/renderer-react', '@astrojs/renderer-preact']),
+	integrations: z
+		.array(
+			z.any()
+		)
+		.default([])
+		.transform((val: any[]) => {
+			console.log(val);
+			return loadIntegrations(val)
+		}),
+	styleOptions: z.object({
+		postcss: z
+			.object({
+				options: z.any(),
+				plugins: z.array(z.any()),
+			})
+			.optional()
+			.default({options: {}, plugins: []}),
+	})
+		.optional()
+		.default({})
+	,
 	markdownOptions: z
 		.object({
 			render: z.any().optional().default(['@astrojs/markdown-remark', {}]),
@@ -102,8 +158,27 @@ export async function validateConfig(userConfig: any, root: string): Promise<Ast
 			.string()
 			.default('./dist')
 			.transform((val) => new URL(addTrailingSlash(val), fileProtocolRoot)),
+		styleOptions: z.object({
+			postcss: z
+				.object({
+					options: z.any(),
+					plugins: z.array(z.any()),
+				})
+				.optional()
+				.default({options: {}, plugins: []})
+				.transform((val) => resolvePostcssConfig(val, fileProtocolRoot)),
+		})
+			.optional()
+			.default({})
+		,
 	});
-	return AstroConfigRelativeSchema.parseAsync(userConfig);
+	return {
+		...(await AstroConfigRelativeSchema.parseAsync(userConfig)),
+		// TODO: This is a property on the config object that is never seen by the user.
+		// We may want a wrapping AstroConfig class in the future to manage things like these.
+		_renderers: [],
+		_ctx: { scripts: [] },
+	};
 }
 
 /** Adds '/' to end of string but doesn’t double-up */
@@ -169,7 +244,7 @@ export async function loadConfig(configOptions: LoadConfigOptions): Promise<Astr
 	// If `userConfigPath` is `undefined`, Proload will search for `astro.config.[cm]?[jt]s`
 	const config = await load('astro', { mustExist: false, cwd: root, filePath: userConfigPath });
 	if (config) {
-		userConfig = config.value;
+		userConfig = config.raw;
 	}
 	// normalize, validate, and return
 	const mergedConfig = mergeCLIFlags(userConfig, flags);

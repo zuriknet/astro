@@ -1,0 +1,23 @@
+{
+  "name": "@astrojs/partytown",
+  "description": "Astro + Partytown integration",
+  "version": "0.1.0",
+  "type": "module",
+  "author": "withastro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/withastro/astro.git",
+    "directory": "packages/integrations/partytown"
+  },
+  "bugs": "https://github.com/withastro/astro/issues",
+  "homepage": "https://astro.build",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@builder.io/partytown": "^0.4.0",
+    "mrmime": "*"
+  }
+}

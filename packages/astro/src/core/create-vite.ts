@@ -5,6 +5,7 @@ import { builtinModules } from 'module';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import * as vite from 'vite';
+import { runHookServerSetup } from '../integrations/index.js';
 import astroVitePlugin from '../vite-plugin-astro/index.js';
 import astroViteServerPlugin from '../vite-plugin-astro-server/index.js';
 import astroPostprocessVitePlugin from '../vite-plugin-astro-postprocess/index.js';
@@ -12,7 +13,7 @@ import configAliasVitePlugin from '../vite-plugin-config-alias/index.js';
 import markdownVitePlugin from '../vite-plugin-markdown/index.js';
 import jsxVitePlugin from '../vite-plugin-jsx/index.js';
 import envVitePlugin from '../vite-plugin-env/index.js';
-import { resolveDependency } from './util.js';
+import scriptsVitePlugin from '../vite-plugin-scripts/index.js';
 
 // Some packages are just external, and that’s the way it goes.
 const ALWAYS_EXTERNAL = new Set([
@@ -41,12 +42,11 @@ interface CreateViteOptions {
 }
 
 /** Return a common starting point for all Vite actions */
-export async function createVite(inlineConfig: ViteConfigWithSSR, { astroConfig, logging, mode }: CreateViteOptions): Promise<ViteConfigWithSSR> {
+export async function createVite(commandConfig: ViteConfigWithSSR, { astroConfig, logging, mode }: CreateViteOptions): Promise<ViteConfigWithSSR> {
 	// Scan for any third-party Astro packages. Vite needs these to be passed to `ssr.noExternal`.
 	const astroPackages = await getAstroPackages(astroConfig);
-
 	// Start with the Vite configuration that Astro core needs
-	let viteConfig: ViteConfigWithSSR = {
+	const commonConfig: ViteConfigWithSSR = {
 		cacheDir: fileURLToPath(new URL('./node_modules/.vite/', astroConfig.projectRoot)), // using local caches allows Astro to be used in monorepos, etc.
 		clearScreen: false, // we want to control the output, not Vite
 		logLevel: 'error', // log errors only
@@ -59,10 +59,18 @@ export async function createVite(inlineConfig: ViteConfigWithSSR, { astroConfig,
 			// The server plugin is for dev only and having it run during the build causes
 			// the build to run very slow as the filewatcher is triggered often.
 			mode === 'dev' && astroViteServerPlugin({ config: astroConfig, logging }),
+			scriptsVitePlugin({ config: astroConfig }),
 			envVitePlugin({ config: astroConfig }),
 			markdownVitePlugin({ config: astroConfig }),
 			jsxVitePlugin({ config: astroConfig, logging }),
 			astroPostprocessVitePlugin({ config: astroConfig }),
+			// TODOINT: Move into its own plugin file
+			{
+				name: 'astro:integration-container',
+				configureServer(server) {
+					runHookServerSetup({ config: astroConfig, server });
+				},
+			},
 		],
 		publicDir: fileURLToPath(astroConfig.public),
 		root: fileURLToPath(astroConfig.projectRoot),
@@ -75,6 +83,9 @@ export async function createVite(inlineConfig: ViteConfigWithSSR, { astroConfig,
 				// add proxies here
 			},
 		},
+		css: {
+			postcss: astroConfig.styleOptions.postcss || {},
+		},
 		// Note: SSR API is in beta (https://vitejs.dev/guide/ssr.html)
 		ssr: {
 			external: [...ALWAYS_EXTERNAL],
@@ -82,26 +93,21 @@ export async function createVite(inlineConfig: ViteConfigWithSSR, { astroConfig,
 		},
 	};
 
-	// Add in Astro renderers, which will extend the base config
-	for (const name of astroConfig.renderers) {
-		try {
-			const { default: renderer } = await import(resolveDependency(name, astroConfig));
-			if (!renderer) continue;
-			// if a renderer provides viteConfig(), call it and pass in results
-			if (renderer.viteConfig) {
-				if (typeof renderer.viteConfig !== 'function') {
-					throw new Error(`${name}: viteConfig(options) must be a function! Got ${typeof renderer.viteConfig}.`);
-				}
-				const rendererConfig = await renderer.viteConfig({ mode: inlineConfig.mode, command: inlineConfig.mode === 'production' ? 'build' : 'serve' }); // is this command true?
-				viteConfig = vite.mergeConfig(viteConfig, rendererConfig) as ViteConfigWithSSR;
-			}
-		} catch (err) {
-			throw new Error(`${name}: ${err}`);
+	// Merge configs: we merge vite configuration objects together in the following order,
+	// where future values will override previous values.
+	// 	 1. common vite config
+	// 	 2. user-provided vite config, via AstroConfig
+	//   3. integration-provided vite config, via the `config:setup` hook
+	//   4. command vite config, passed as the argument to this function
+	let result = commonConfig;
+	result = vite.mergeConfig(result, astroConfig.vite || {});
+	for (const integration of astroConfig.integrations) {
+		if (integration._config && integration._config.vite) {
+			result = vite.mergeConfig(result, integration._config.vite);
 		}
 	}
-
-	viteConfig = vite.mergeConfig(viteConfig, inlineConfig); // merge in inline Vite config
-	return viteConfig;
+	result = vite.mergeConfig(result, commandConfig);
+	return result;
 }
 
 // Scans `projectRoot` for third-party Astro packages that could export an `.astro` file
