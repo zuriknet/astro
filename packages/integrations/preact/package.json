@@ -24,6 +24,9 @@
     "@babel/plugin-transform-react-jsx": "^7.16.7",
     "preact-render-to-string": "^5.1.19"
   },
+  "devDependencies": {
+    "preact": "^10.6.5"
+  },
   "peerDependencies": {
     "preact": "^10.6.5"
   },

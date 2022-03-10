@@ -7,7 +7,7 @@ import { ViteDevServer } from 'vite';
 
 export async function loadIntegrations(integrations: (Promise<any> | [Promise<any>, any])[]): Promise<AstroIntegration[]> {
 	return await Promise.all(
-		integrations.map(async (val: (Promise<any> | [Promise<any>, any])) => {
+		integrations.map(async (val: Promise<any> | [Promise<any>, any]) => {
 			// TODO: Finalize integration data structure
 			const modAsync = Array.isArray(val) ? val[0] : val;
 			const options = Array.isArray(val) ? val[1] : {};

@@ -24,6 +24,7 @@ export default function createPlugin() {
 				server.middlewares.use(sirv(partytownLibDirectory, { mount: '/~partytown', dev: true, etag: true, extensions: [] }));
 			},
 			'astro:build:done': async () => {
+				console.log('AH');
 				await copyLibFiles(fileURLToPath(new URL('~partytown', config.dist)), { debugDir: false });
 			},
 		},

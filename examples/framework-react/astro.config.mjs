@@ -9,7 +9,5 @@
 // @ts-check
 export default /** @type {import('astro').AstroUserConfig} */ ({
 	// Enable the React renderer to support React JSX components.
-	integrations: [
-		import('@astrojs/react'),
-	],
+	integrations: [import('@astrojs/react')],
 });

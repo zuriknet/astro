@@ -9,7 +9,5 @@
 // @ts-check
 export default /** @type {import('astro').AstroUserConfig} */ ({
 	// Enable the Solid renderer to support Solid JSX components.
-	integrations: [
-		import('@astrojs/solid')
-	],
+	integrations: [import('@astrojs/solid')],
 });

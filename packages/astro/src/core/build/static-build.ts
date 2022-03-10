@@ -173,9 +173,11 @@ async function ssrBuild(opts: StaticBuildOptions, internals: BuildInternals, inp
 	const ssr = astroConfig.buildOptions.experimentalSsr;
 	const out = ssr ? getServerRoot(astroConfig) : getOutRoot(astroConfig);
 
+	// TODO: use mergeConfig here?
 	return await vite.build({
 		logLevel: 'error',
 		mode: 'production',
+		css: viteConfig.css,
 		build: {
 			...viteConfig.build,
 			emptyOutDir: false,
@@ -220,9 +222,11 @@ async function clientBuild(opts: StaticBuildOptions, internals: BuildInternals, 
 
 	const out = astroConfig.buildOptions.experimentalSsr ? getClientRoot(astroConfig) : getOutRoot(astroConfig);
 
+	// TODO: use mergeConfig here?
 	return await vite.build({
 		logLevel: 'error',
 		mode: 'production',
+		css: viteConfig.css,
 		build: {
 			emptyOutDir: false,
 			minify: 'esbuild',
@@ -265,14 +269,14 @@ function getRenderers(opts: StaticBuildOptions) {
 	return viteLoadedRenderers;
 }
 
-async function loadRenderer(renderer: AstroRenderer): Promise<SSRLoadedRenderer> {
-	const mod = (await import(renderer.serverEntrypoint)) as { default: SSRLoadedRenderer['ssr'] };
+async function loadRenderer(renderer: AstroRenderer, config: AstroConfig): Promise<SSRLoadedRenderer> {
+	const mod = (await import(resolveDependency(renderer.serverEntrypoint, config))) as { default: SSRLoadedRenderer['ssr'] };
 	return { ...renderer, ssr: mod.default };
 }
 
-async function loadRenderers(astroConfig: AstroConfig): Promise<SSRLoadedRenderer[]> {
+async function loadRenderers(config: AstroConfig): Promise<SSRLoadedRenderer[]> {
 	// TODO: run serially?
-	return Promise.all(astroConfig._renderers.map((r) => loadRenderer(r)));
+	return Promise.all(config._renderers.map((r) => loadRenderer(r, config)));
 }
 
 async function generatePages(result: RollupOutput, opts: StaticBuildOptions, internals: BuildInternals, facadeIdToPageDataMap: Map<string, PageBuildData>) {
@@ -357,6 +361,16 @@ async function generatePath(pathname: string, opts: StaticBuildOptions, gopts: G
 	const site = astroConfig.buildOptions.site;
 	const links = createLinkStylesheetElementSet(linkIds.reverse(), site);
 	const scripts = createModuleScriptElementWithSrcSet(hoistedId ? [hoistedId] : [], site);
+
+	// TODO: We should allow adding generic HTML elements to the head, not just scripts
+	for (const script of astroConfig._ctx.scripts) {
+		if (script.stage === 'head') {
+			scripts.add({
+				props: {},
+				children: script.content,
+			});
+		}
+	}
 
 	try {
 		const html = await render({

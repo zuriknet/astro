@@ -19,6 +19,14 @@
   },
   "dependencies": {
     "tailwindcss": "^3.0.23",
+    "autoprefixer": "^10.4.2",
     "@builder.io/partytown": "^0.4.0"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "postcss"
+      ]
+    }
   }
 }

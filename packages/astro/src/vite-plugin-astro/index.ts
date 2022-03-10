@@ -134,9 +134,9 @@ export default function astro({ config, logging }: AstroPluginOptions): vite.Plu
 			try {
 				// HACK: Playing around with some page-level scripts & styles
 				// TODO: Is there a way to do this using the compiler instead?
-				// TODO: Why does all of this logic happen in transform instead of load()?
+				// TODO: Also, why does all of this logic happen in transform instead of load()?
 				if (id.includes('/src/pages/')) {
-					source += `\n<script hoist src="$scripts/bundle.js" />\n`;
+					source = source.replace('\n', '\nimport "$scripts/bundle.js";');
 				}
 
 				const transformResult = await cachedCompilation(config, id, source, viteTransform, { ssr: Boolean(opts?.ssr) });

@@ -9,7 +9,5 @@
 // @ts-check
 export default /** @type {import('astro').AstroUserConfig} */ ({
 	// Enable the Vue renderer to support Vue components.
-	integrations: [
-		import('@astrojs/vue'),
-	],
+	integrations: [import('@astrojs/vue')],
 });

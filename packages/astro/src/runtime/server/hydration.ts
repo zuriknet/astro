@@ -1,4 +1,4 @@
-import type { AstroComponentMetadata, LoadedRenderer } from '../../@types/astro';
+import type { AstroComponentMetadata, SSRLoadedRenderer } from '../../@types/astro';
 import type { SSRElement, SSRResult } from '../../@types/astro';
 import { hydrationSpecifier, serializeListValue } from './util.js';
 import serializeJavaScript from 'serialize-javascript';
@@ -81,7 +81,7 @@ export function extractDirectives(inputProps: Record<string | number, any>): Ext
 }
 
 interface HydrateScriptOptions {
-	renderer: LoadedRenderer;
+	renderer: SSRLoadedRenderer;
 	result: SSRResult;
 	astroId: string;
 	props: Record<string | number, any>;

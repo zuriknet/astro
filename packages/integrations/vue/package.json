@@ -22,6 +22,9 @@
   "dependencies": {
     "@vitejs/plugin-vue": "^2.2.0"
   },
+  "devDependencies": {
+    "vue": "^3.2.30"
+  },
   "peerDependencies": {
     "vue": "^3.2.30"
   },

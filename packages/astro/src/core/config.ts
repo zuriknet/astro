@@ -9,7 +9,7 @@ import { z } from 'zod';
 import load from '@proload/core';
 import loadTypeScript from '@proload/plugin-tsm';
 import { loadIntegrations } from '../integrations/index.js';
-import postcssrc from 'postcss-load-config'
+import postcssrc from 'postcss-load-config';
 
 load.use([loadTypeScript]);
 
@@ -22,7 +22,7 @@ interface PostCSSConfigResult {
 	plugins: Postcss.Plugin[];
 }
 
-async function resolvePostcssConfig(inlineOptions: any, root: URL): Promise<PostCSSConfigResult> {
+async function resolvePostcssConfig(inlineOptions: any, root: URL): Promise<PostCSSConfigResult | undefined> {
 	if (isObject(inlineOptions)) {
 		const options = { ...inlineOptions };
 		delete options.plugins;
@@ -31,19 +31,22 @@ async function resolvePostcssConfig(inlineOptions: any, root: URL): Promise<Post
 			plugins: inlineOptions.plugins || [],
 		};
 	}
-	const searchPath = typeof inlineOptions === 'string' ? inlineOptions : fileURLToPath(root);
-	try {
-		// @ts-ignore
-		return await postcssrc({}, searchPath);
-	} catch (err: any) {
-		if (!/No PostCSS Config found/.test(err.message)) {
-			throw err;
+	if (typeof inlineOptions === 'string') {
+		const searchPath = typeof inlineOptions === 'string' ? inlineOptions : fileURLToPath(root);
+		try {
+			// @ts-ignore
+			return await postcssrc({}, searchPath);
+		} catch (err: any) {
+			if (!/No PostCSS Config found/.test(err.message)) {
+				throw err;
+			}
+			return {
+				options: {},
+				plugins: [],
+			};
 		}
-		return {
-			options: {},
-			plugins: [],
-		};
 	}
+	return undefined;
 }
 
 export const AstroConfigSchema = z.object({
@@ -73,26 +76,24 @@ export const AstroConfigSchema = z.object({
 		.default('./dist')
 		.transform((val) => new URL(val)),
 	integrations: z
-		.array(
-			z.any()
-		)
+		.array(z.any())
 		.default([])
 		.transform((val: any[]) => {
 			console.log(val);
-			return loadIntegrations(val)
+			return loadIntegrations(val);
 		}),
-	styleOptions: z.object({
-		postcss: z
-			.object({
-				options: z.any(),
-				plugins: z.array(z.any()),
-			})
-			.optional()
-			.default({options: {}, plugins: []}),
-	})
+	styleOptions: z
+		.object({
+			postcss: z
+				.object({
+					options: z.any(),
+					plugins: z.array(z.any()),
+				})
+				.optional()
+				.default({ options: {}, plugins: [] }),
+		})
 		.optional()
-		.default({})
-	,
+		.default({}),
 	markdownOptions: z
 		.object({
 			render: z.any().optional().default(['@astrojs/markdown-remark', {}]),
@@ -158,19 +159,21 @@ export async function validateConfig(userConfig: any, root: string): Promise<Ast
 			.string()
 			.default('./dist')
 			.transform((val) => new URL(addTrailingSlash(val), fileProtocolRoot)),
-		styleOptions: z.object({
-			postcss: z
-				.object({
-					options: z.any(),
-					plugins: z.array(z.any()),
-				})
-				.optional()
-				.default({options: {}, plugins: []})
-				.transform((val) => resolvePostcssConfig(val, fileProtocolRoot)),
-		})
+		styleOptions: z
+			.object({
+				postcss: z.preprocess(
+					(val) => resolvePostcssConfig(val, fileProtocolRoot),
+					z
+						.object({
+							options: z.any(),
+							plugins: z.array(z.any()),
+						})
+						.optional()
+						.default({ options: {}, plugins: [] })
+				),
+			})
 			.optional()
-			.default({})
-		,
+			.default({}),
 	});
 	return {
 		...(await AstroConfigRelativeSchema.parseAsync(userConfig)),
