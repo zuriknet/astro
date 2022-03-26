@@ -291,11 +291,6 @@ describe('CSS', function () {
 			expect((await fixture.fetch(href)).status).to.equal(200);
 		});
 
-		it('resolves Astro styles', async () => {
-			const style = $('style[astro-style]');
-			expect(style.length).to.not.equal(0);
-		});
-
 		it('resolves Styles from React', async () => {
 			const styles = [
 				'ReactCSS.css',
