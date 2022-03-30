@@ -1,9 +1,9 @@
 import { AstroIntegration } from 'astro';
 
-function getRenderer({hasClientEntrypoint}: {hasClientEntrypoint: boolean}) {
+function getRenderer({reactVersion}: {reactVersion: 17 | 18}) {
 	return {
 		name: '@astrojs/react',
-		clientEntrypoint: hasClientEntrypoint ? '@astrojs/react/client.js' : '@astrojs/react/client-v17.js',
+		clientEntrypoint: reactVersion >= 18 ? '@astrojs/react/client.js' : '@astrojs/react/client-v17.js',
 		serverEntrypoint: '@astrojs/react/server.js',
 		jsxImportSource: 'react',
 		jsxTransformOptions: async () => {
@@ -17,7 +17,7 @@ function getRenderer({hasClientEntrypoint}: {hasClientEntrypoint: boolean}) {
 						{},
 						{
 							runtime: 'automatic',
-							importSource: '@astrojs/react',
+							importSource: reactVersion >= 18 ? 'react' : '@astrojs/react',
 						}
 					),
 				],
@@ -41,13 +41,13 @@ function getViteConfiguration() {
 	};
 }
 
-export default function (): AstroIntegration {
+export default function (options = {}): AstroIntegration {
 	return {
 		name: '@astrojs/react',
 		hooks: {
 			'astro:config:setup': async ({ addRenderer, updateConfig }) => {
-				const hasClientEntrypoint = await (import('react-dom/client.js').then(() => true).catch(() => false));
-				addRenderer(getRenderer({hasClientEntrypoint}));
+				const reactVersion = await (import('react-dom/client').then(() => 18 as 18).catch(() => 17 as 17));
+				addRenderer(getRenderer({reactVersion}));
 				updateConfig({ vite: getViteConfiguration() });
 			},
 		},
